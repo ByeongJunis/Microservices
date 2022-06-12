@@ -1,0 +1,54 @@
+service: aws-node-sqs-worker
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x 
+  region: ap-northeast-2
+  iam:
+    role: 'AWS USE ROLE'
+
+resources:
+  Resources:
+    SuperTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: stock_empty.fifo
+        FifoTopic: true
+        Subscription:
+        - Protocol: sqs
+          Endpoint: 'SQS FIFO ARN'
+        - Protocol: sqs
+          Endpoint: 'SQS FIFO ARN'
+  
+constructs:
+  jobs:
+    type: queue
+    worker:
+      handler: handler.manufactures
+    fifo: true
+  jobs2:
+    type: queue
+    worker:
+      handler: ses.ses
+    fifo: true
+    
+functions:
+  - producer:
+      handler: index.handler 
+      events:
+        - httpApi:
+            method: post
+            path: /send
+        - httpApi:
+            method: post
+            path: /factures
+      environment: 
+        host: process.env.host,
+        user: process.env.user,
+        password: process.env.password,
+        database: process.env.database
+
+
+plugins:
+  - serverless-lift
